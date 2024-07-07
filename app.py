@@ -13,7 +13,9 @@ db = SQLAlchemy(app)
 
 @app.before_request
 def before_request():
-    if request.is_json:
+    if request.method in ['POST', 'PUT', 'PATCH']:
+        if not request.is_json:
+            return jsonify({'message': 'Request must be JSON'}), 400
         try:
             request.data = request.get_json()
         except:
@@ -23,17 +25,21 @@ class Log(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.String(255), nullable=False)
 
-try:
-    db.create_all()
-except Exception as e:
-    app.logger.error('Error creating database tables: %s', e)
+def setup_database(app):
+    with app.app_context():
+        try:
+            db.create_all()
+        except Exception as e:
+            app.logger.error('Error creating database tables: %s', e)
+
+setup_database(app)
 
 @app.route('/logs', methods=['POST'])
 def add_log():
     content = request.data.get('content', '')
     if content:
+        new_log = Log(content=content)
         try:
-            new_log = Log(content=content)
             db.session.add(new_log)
             db.session.commit()
             return jsonify({'message': 'Log added'}), 201
@@ -51,12 +57,11 @@ def get_logs():
         return jsonify([{'id': log.id, 'content': log.content} for log in logs]), 200
     except Exception as e:
         app.logger.error('Error fetching logs: %s', e)
-        return jsonify({'message': 'Error retrieving logs'}), 500
+        return jsonify({'AMEssage': 'Error retrieving logs'}), 500
 
 @app.route('/report', methods=['GET'])
 def generate_report():
     try:
-        # Placeholder for actual report generation logic
         return jsonify({'message': 'Report generated'}), 200
     except Exception as e:
         app.logger.error('Error generating report: %s', e)
