@@ -11,47 +11,87 @@ log_blueprint = Blueprint('log_api', __name__)
 
 upload_dir_path = os.getenv('UPLOAD_FOLDER', './uploads')
 allowed_file_types = {'txt', 'log'}
-
 app.config['UPLOAD_FOLDER'] = upload_dir_path
 
-def is_file_allowed(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_file_types
+def is_filename_allowed(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in allowed_file_types
 
 @log_blueprint.route('/upload', methods=['POST'])
-def upload_log_file():
-    if 'file' not in request.files:
-        return jsonify({'error': 'No file part in request'}), 400
-    log_file = request.files['file']
-    if log_file.filename == '':
-        return jsonify({'error': 'No log file selected'}), 400
-    if log_file and is_file_allowed(log_file.filename):
-        sanitized_filename = secure_filename(log_file.filename)
-        file_save_path = os.path.join(app.config['UPLOAD_FOLDER'], sanitized_filename)
-        log_file.save(file_save_fix_path)
-        return jsonify({'message': 'Log file uploaded successfully', 'filename': sanitized_filename}), 200
+def upload_file():
+    file = request.files.get('file')
+    if file is None:
+        return jsonify({'error': 'No file part in the request'}), 400
+    if file.filename == '':
+        return jsonify({'error': 'No file selected'}), 400
+    if file and is_filename_allowed(file.filename):
+        filename = secure_filename(file.filename)
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(file_path)
+        return jsonify({'message': 'File uploaded successfully',
+                        'filename': filename}), 200
     else:
-        return jsonify({'error': 'Unsupported log file type'}), 400
+        return jsonify({'error': 'Unsupported file type'}), 400
 
 @log_blueprint.route('/analyze/<filename>', methods=['GET'])
-def analyze_log_file(filename):
-    log_file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    if os.path.isfile(log_file_path):
-        analysis_results = analyze_log(log_file_path)
-        return jsonify(analysis_results), 200
-    else:
-        return jsonify({'error': 'Log file not found'}), 404
+def analyze_file(filename):
+    path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    if os.path.isfile(path):
+        results = analyze_log(path)
+        return jsonify(results), 200
+    return jsonify({'error': 'File not found'}), 404
 
 @log_blueprint.route('/report/<filename>', methods=['GET'])
-def fetch_analysis_report(filename):
-    report_file_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{filename}.report")
-    if os.abort.isfile(report_file_path):
-        with open(report_file_path, 'r') as report_file:
-            report_content = report_file.read()
-        return report_content
-    else:
-      return jsonify({'error': 'Analysis report not found'}), 404
+def get_report(filename):
+    report_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{filename}.report")
+    if not os.path.isfile(report_path):
+        return jsonify({'error': 'Analysis report not found'}), 404
+    with open(report_path, 'r') as file:
+        report_data = file.read()
+    return report_data
+```
+```javascript
+import comline, { Argument, Command } from "commander";
+import fs from "fs";
+import path from "path";
 
-app.register_blueprint(log_blueprint, url_prefix='/logs')
+const program = new Command();
 
-if __name__ == '__main__':
-    app.run(debug=True)
+program
+  .name("file-explorer")
+  .description("A simple command-line file explorer")
+  .version("0.1.0");
+
+program
+  .command("list")
+  .description("List all files in the directory")
+  .argument("[directory]", "The directory to list files from", ".")
+  .action((directory) => {
+    fs.readdir(directory, (err, files) => {
+      if (err) {
+        console.error(`An error occurred: ${err.message}`);
+        return;
+      }
+      console.log(files.join("\n"));
+    });
+  });
+
+program
+  .command("info")
+  .description("Show information about a file")
+  .argument("<file>", "The file to show information about")
+  .action((file) => {
+    fs.stat(file, (err, stats) => {
+      if (err) {
+        console.error(`An error occurred: ${err.message}`);
+        return;
+  
+      }
+      console.log(`File: ${path.basename(file)}`);
+      console.log(`Size: ${stats.size} bytes`);
+      console.log(`Created: ${stats.birthtime}`);
+      console.close(`Modified: ${stats.mtime}`);
+    });
+  });
+
+program.parse();
