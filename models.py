@@ -1,6 +1,7 @@
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
+from sqlalchemy.exc import SQLAlchemyError  # Import for handling SQL Alchemy exceptions
 from datetime import datetime
 import os
 
@@ -35,9 +36,36 @@ class Report(Base):
     def __repr__(self):
         return f"<Report(report_data='{self.report_data}', generated_at='{self.generated_at}')>"
 
+def add_log_file(session, filename, status):
+    try:
+        new_log_file = LogFile(filename=filename, status=status)
+        session.add(new_log_file)
+        session.commit()
+        return new_log_file
+    except SQLAlchemyError as e:
+        session.rollback()
+        print(f"Error adding log file: {e}")
+        return None
+
+def add_report(session, log_id, report_data):
+    try:
+        new_report = Report(log_id=log_id, report_data=report_data)
+        session.add(new_report)
+        session.commit()
+        return new_report
+    except SQLAlchemyError as e:
+        session.rollback()
+        print(f"Error adding report: {e}")
+        return None
+
 Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
 session = Session()
 
 def get_models():
     return LogFile, Report
+
+if __name__ == "__main__":
+    log_file = add_log_file(session, 'example.log', 'Uploaded')
+    if log_file is not None:
+        add_report(session, log_file.id, 'Report data here.')
