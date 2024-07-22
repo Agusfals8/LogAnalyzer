@@ -4,38 +4,44 @@ from sqlalchemy.orm import sessionmaker, relationship
 from sqlalchemy.exc import SQLAlchemyError  # Import for handling SQL Alchemy exceptions
 from datetime import datetime
 import os
+import logging
 
 DATABASE_URI = os.getenv('DATABASE_URI', 'sqlite:///log_analysis.db')
 
 engine = create_engine(DATABASE_URI)
 Base = declarative_base()
 
+# Setup basic logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 class LogFile(Base):
     __tablename__ = 'log_files'
-
+    
     id = Column(Integer, primary_key=True)
     filename = Column(String(255), nullable=False)
     upload_date = Column(DateTime, default=datetime.utcnow)
     status = Column(String(100))
-
+    
     reports = relationship('Report', back_populates='log_file')
-
+    
     def __repr__(self):
         return f"<LogFile(filename='{self.filename}', upload_date='{self.upload_date}', status='{self.status}')>"
 
 class Report(Base):
     __tablename__ = 'reports'
-
+    
     id = Column(Integer, primary_key=True)
     log_id = Column(Integer, ForeignKey('log_files.id'))
     report_data = Column(String)
     generated_at = Column(DateTime, default=datetime.utcnow)
-
+    
     log_file = relationship('LogFile', back_populates='reports')
-
+    
     def __repr__(self):
         return f"<Report(report_data='{self.report_data}', generated_at='{self.generated_at}')>"
 
+# Enhanced error handling in add_log_file
 def add_log_file(session, filename, status):
     try:
         new_log_file = LogFile(filename=filename, status=status)
@@ -44,18 +50,27 @@ def add_log_file(session, filename, status):
         return new_log_file
     except SQLAlchemyError as e:
         session.rollback()
-        print(f"Error adding log file: {e}")
+        logger.error(f"SQLAlchemyError adding log file: {e}")
+        return None
+    except Exception as e:
+        session.rollback()
+        logger.error(f"Unexpected error adding log file: {e}")
         return None
 
+# Enhanced error handling in add_report
 def add_report(session, log_id, report_data):
     try:
-        new_report = Report(log_id=log_id, report_data=report_data)
+        new_report = Report(log_id=log_id, report_data=report_state)
         session.add(new_report)
         session.commit()
         return new_report
     except SQLAlchemyError as e:
         session.rollback()
-        print(f"Error adding report: {e}")
+        logger.error(f"SQLAlchemyError adding report: {e}")
+        return None
+    except Exception as e:
+        session.rollback()
+        logger.error(f"Unexpected error adding report: {e}")
         return None
 
 Base.metadata.create_all(engine)
