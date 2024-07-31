@@ -20,6 +20,18 @@ def detect_anomalies(log_entries):
         return True, f"High number of ERROR logs detected: {error_count}"
     return False, None
 
+def summarize_log_levels(log_entries):
+    """
+    Summarize occurrences of each log level in the provided log entries.
+    """
+    level_summary = {}
+    for log in log_entries:
+        if log['log_level'] in level_summary:
+            level_summary[log['log_level']] += 1
+        else:
+            level_summary[log['log_level']] = 1
+    return level_summary
+
 def process_log_file(file_path):
     with open(file_path, 'r') as file:
         logs = file.readlines()
@@ -27,15 +39,18 @@ def process_log_file(file_path):
     parsed_logs = [parse_log_line(log) for log in logs if parse_log_line(log)]
     
     anomalies_found, anomaly_message = detect_anomalies(parsed_logs)
+    log_levels_summary = summarize_log_levels(parsed_logs)
     
     report = {
         "total_logs": len(logs),
+        "parsed_logs": len(parsed_logs),
         "anomalies_found": anomalies_found,
-        "anomaly_message": anomaly_message
+        "anomaly_message": anomaly_message,
+        "log_levels_summary": log_levels_summary
     }
     return report
 
-def generate_report(report_data):
+def generate_json(report_data):
     print(json.dumps(report_data, indent=4))
 
 def main():
