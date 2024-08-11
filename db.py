@@ -1,6 +1,10 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import SQLAlchemyError
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 DATABASE_URI = 'sqlite:///mydatabase.db'
 
@@ -13,16 +17,21 @@ def get_db_session():
     try:
         session = Session()
     except SQLAlchemyError as e:
-        print(f"Database connection error: {e}")
+        logger.error(f"Database connection error: {e}", exc_info=True)
     except Exception as e:
-        print(f"An error occurred: {e}")
+        logger.error(f"An unexpected error occurred: {e}", exc_info=True)
     
     return session
 
 if __name__ == "__main__":
     session = get_db_session()
     if session:
-        print("Session successfully created!")
-        session.close()
+        logger.info("Session successfully created!")
+        try:
+            session.close()
+        except SQLAlchemyError as e:
+            logger.error(f"Failed to close the session properly: {e}", exc_info=True)
+        except Exception as e:
+            logger.error(f"An unexpected error occurred during session closure: {e}", exc_info=True)
     else:
-        print("Failed to create a database session.")
+        logger.info("Failed to create a database session.")
