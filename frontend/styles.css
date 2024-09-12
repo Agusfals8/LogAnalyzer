@@ -1,0 +1,48 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+}
+header {
+    background-color: #333;
+    color: #fff;
+    padding: 20px;
+    text-align: center;
+}
+.log-upload-form {
+    background-color: #fff;
+    padding: 20px;
+    margin: 20px auto;
+    width: 80%;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+.log-upload-form label, .log-upload-form input {
+    display: block;
+    width: 100%;
+    margin-bottom: 10px;
+}
+.log-upload-form input[type="file"] {
+    border: 1px solid #ddd;
+    padding: 10px;
+}
+.log-upload-form input[type="submit"] {
+    background-color: #5cb85c;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+}
+.log-report-section {
+    background-color: #fff;
+    padding: 20px;
+    margin: 20px auto;
+    width: 80%;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+@media (max-width: 768px) {
+    .log-upload-form, .log-report-section {
+        width: 95%;
+        margin: 20px auto;
+    }
+}
