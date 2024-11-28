@@ -9,11 +9,17 @@ const LogFileUploader = () => {
     setUploadStatus('');
   };
 
+  const logToConsole = (message) => {
+    console.log(message);
+  };
+
   const handleSubmit = async (event) => {
-    event.preventDefault(); 
+    event.preventDefault();
 
     if (!selectedFile) {
-      setUploadStatus('Please select a file to upload.');
+      const message = 'Please select a file to upload.';
+      setUploadStatus(message);
+      logToConsole(message);
       return;
     }
 
@@ -25,14 +31,20 @@ const LogFileUploader = () => {
         method: 'POST',
         body: formData,
       });
-      
+
       if (response.ok) {
-        setUploadStatus('File uploaded successfully!');
+        const successMessage = 'File uploaded successfully!';
+        setUploadStatus(successMessage);
+        logToConsole(successMessage);
       } else {
-        setUploadStatus('Failed to upload file.');
+        const failureMessage = 'Failed to upload file.';
+        setUploadStatus(failureMessage);
+        logToConsole(failureMessage);
       }
     } catch (error) {
-      setUploadStatus(`Error: ${error.message}`);
+      const errorMessage = `Error: ${error.message}`;
+      setUploadStatus(errorMessage);
+      logToConsole(errorMessage);
     }
   };
 
